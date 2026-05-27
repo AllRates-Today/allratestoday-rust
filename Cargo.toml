@@ -1,10 +1,10 @@
 [package]
 name = "allratestoday"
-version = "1.0.0"
+version = "1.0.1"
 edition = "2021"
 description = "Official Rust SDK for AllRatesToday — real-time mid-market exchange rates for 160+ currencies"
 license = "MIT"
-repository = "https://github.com/allratestoday/allratestoday-rust"
+repository = "https://github.com/AllRates-Today/allratestoday-rust"
 homepage = "https://allratestoday.com"
 documentation = "https://docs.rs/allratestoday"
 keywords = ["exchange-rate", "currency", "forex", "api", "allratestoday"]
