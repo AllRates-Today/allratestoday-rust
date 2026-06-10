@@ -1,5 +1,7 @@
 # allratestoday
 
+[![Powered by AllRatesToday](https://img.shields.io/badge/Powered%20by-AllRatesToday-orange.svg)](https://allratestoday.com)
+
 [![Crates.io](https://img.shields.io/crates/v/allratestoday.svg)](https://crates.io/crates/allratestoday)
 [![Docs.rs](https://docs.rs/allratestoday/badge.svg)](https://docs.rs/allratestoday)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
