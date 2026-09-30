@@ -19,7 +19,7 @@ The official Rust client for the [AllRatesToday](https://allratestoday.com) curr
 - 🧩 **Typed responses** — every endpoint deserialises into a documented `struct` via `serde`
 - 🛡️ **Typed errors** — one `AllRatesTodayError` enum separating transport, API and parse failures
 - 🔧 **Overridable base URL** — point the client at a test server with `with_base_url`
-- 📡 **Data source** — institutional interbank market data
+- 💹 **Mid-market rates** — no retail spread baked in
 
 ## 🔑 Get your API key
 
