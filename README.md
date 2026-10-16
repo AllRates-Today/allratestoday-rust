@@ -1,6 +1,6 @@
 # AllRatesToday Rust SDK — allratestoday
 
-The official Rust client for the [AllRatesToday](https://allratestoday.com) currency API. It is a small, blocking HTTP wrapper for Rust services and CLI tools that need real-time, historical or time-series exchange rates without hand-rolling request and response types.
+The official Rust client for the [AllRatesToday](https://allratestoday.com) currency API. It is a small, blocking HTTP wrapper for Rust services and CLI tools that need real-time, historical or official central-bank exchange rates without hand-rolling request and response types.
 
 [![Powered by AllRatesToday](https://img.shields.io/badge/Powered%20by-AllRatesToday-orange.svg)](https://allratestoday.com)
 
@@ -13,17 +13,18 @@ The official Rust client for the [AllRatesToday](https://allratestoday.com) curr
 ## 🚀 Features
 
 - ⚡ **Real-time rates** — latest mid-market rates for any base currency
-- 🌍 **160+ currencies** — the full list is available from the API via `symbols()`
-- 📅 **Historical data** — rates for a single past date, an arbitrary date range, or a preset period (`1d`, `7d`, `30d`, `1y`)
-- 💱 **Conversion** — convert an amount between two currencies in one call
-- 🧩 **Typed responses** — every endpoint deserialises into a documented `struct` via `serde`
-- 🛡️ **Typed errors** — one `AllRatesTodayError` enum separating transport, API and parse failures
+- 🌍 **160+ currencies** — the full list is available keylessly via `symbols()`
+- 📅 **Historical data** — a past date, a date range, or a preset period (`1d`, `7d`, `30d`, `1y`) across the last 365 days
+- 💱 **Conversion** — convert an amount at the current rate or at a past date's rate
+- 🏛️ **Official rates** — the published tables of 121 central banks + 3 tax authorities, no key needed
+- 🧩 **Typed responses** — every method returns a documented `struct` via `serde`
+- 🛡️ **Typed errors** — one `AllRatesTodayError` enum separating transport, API, parse and argument failures
 - 🔧 **Overridable base URL** — point the client at a test server with `with_base_url`
 - 💹 **Mid-market rates** — no retail spread baked in
 
 ## 🔑 Get your API key
 
-Create a free key at [allratestoday.com/register](https://allratestoday.com/register). Keys look like `art_live_...`, and the SDK sends yours as a Bearer token in the `Authorization` header on every request.
+Create a free key at [allratestoday.com/register](https://allratestoday.com/register): 300 free requests, lifetime (the allowance never resets). Keys look like `art_live_...`, and the SDK sends yours as a Bearer token in the `Authorization` header. `symbols()`, `official_rates()` and `official_sources()` work without a key (use `AllRatesToday::keyless()`); every other method returns `AllRatesTodayError::InvalidArgument` if the client has none.
 
 ## 📦 Installation
 
@@ -35,10 +36,12 @@ Or add it to `Cargo.toml` manually:
 
 ```toml
 [dependencies]
-allratestoday = "1"
+allratestoday = "1.1"
 ```
 
 The crate builds on `reqwest` (blocking, `rustls-tls`), `serde` and `serde_json`.
+
+> **Upgrading from 1.0.x:** 1.0.x called `/v1/...` paths that the API does not serve, so every call failed with HTTP 404. 1.1.0 keeps the same method names and response types but calls the real endpoints. `for_date` and `time_series` now require at least one symbol and cover the last 365 days. `AllRatesTodayError` gains an `InvalidArgument` variant.
 
 ## 🏁 Quick start
 
@@ -50,7 +53,7 @@ fn main() {
 
     // Latest rates for a base currency
     let rates = client.latest("USD", Some(&["EUR", "GBP"])).unwrap();
-    println!("Base: {:?}", rates.base);
+    println!("Base: {:?} as of {:?}", rates.base, rates.date);
     println!("Rates: {:?}", rates.rates);
 
     // Convert an amount
@@ -68,23 +71,25 @@ cargo run --example basic
 
 ## 📚 API reference
 
-Construct a client with `AllRatesToday::new(api_key)`, or `AllRatesToday::with_base_url(api_key, base_url)` to target a different host. Every method is blocking and returns `Result<T, AllRatesTodayError>`.
+Construct a client with `AllRatesToday::new(api_key)`, `AllRatesToday::keyless()`, or `AllRatesToday::with_base_url(api_key, base_url)` to target a different host. Every method is blocking and returns `Result<T, AllRatesTodayError>`.
 
-| Method | Endpoint | Returns |
-|--------|----------|---------|
-| `latest(base, symbols)` | `GET /v1/latest` | `LatestRatesResponse` |
-| `convert(from, to, amount)` | `GET /v1/convert` | `ConvertResponse` |
-| `for_date(date, base, symbols)` | `GET /v1/historical` | `HistoricalRatesResponse` |
-| `time_series(start_date, end_date, base, symbols)` | `GET /v1/timeseries` | `TimeSeriesResponse` |
-| `symbols()` | `GET /v1/symbols` | `SymbolsResponse` |
-| `get_rate(from, to)` | `GET /v1/rate` | `RateResponse` |
-| `get_historical_rates(source, target, period)` | `GET /v1/historical-rates` | `HistoricalRateSeriesResponse` |
-
-`symbols` parameters take `Option<&[&str]>`; pass `None` for every available currency.
+| Method | Endpoint | Key | Returns |
+|--------|----------|-----|---------|
+| `latest(base, symbols)` | `GET /api/v1/rates` | yes | `LatestRatesResponse` |
+| `get_rates(source, targets)` | `GET /api/v1/rates` | yes | `Vec<Rate>` |
+| `get_rate(from, to)` | `GET /api/v1/rates` | yes | `RateResponse` |
+| `convert(from, to, amount)` | `GET /api/v1/rates?amount=` | yes | `ConvertResponse` |
+| `convert_on_date(from, to, amount, date)` | `GET /api/historical-rates` | yes | `ConvertResponse` |
+| `for_date(date, base, symbols)` | `GET /api/historical-rates` (one call per symbol) | yes | `HistoricalRatesResponse` |
+| `time_series(start_date, end_date, base, symbols)` | `GET /api/historical-rates` (one call per symbol) | yes | `TimeSeriesResponse` |
+| `get_historical_rates(source, target, period)` | `GET /api/historical-rates` | yes | `HistoricalRateSeriesResponse` |
+| `symbols()` | `GET /api/v1/symbols` | no | `SymbolsResponse` |
+| `official_rates(bank, source, target)` | `GET /api/open/central-bank/{bank}` | no | `OfficialRatesResponse` |
+| `official_sources()` | `GET /api/open/central-banks` | no | `OfficialSourcesResponse` |
 
 ### `latest(base, symbols)`
 
-Most recent rates for a base currency.
+Most recent mid-market rates for a base currency. Pass `None` for every available currency. `date` is the observation time, e.g. `2026-10-16T11:31:01+0000`.
 
 ```rust
 // All currencies
@@ -96,34 +101,49 @@ println!("Date: {:?}", rates.date);
 println!("Rates: {:?}", rates.rates);
 ```
 
-### `convert(from, to, amount)`
+### `get_rates(source, targets)` and `get_rate(from, to)`
 
-Convert an amount between two currencies.
+`get_rates` returns the raw list, one `Rate` (`rate`, `source`, `target`, `time`) per target; pass `&[]` for every currency. `get_rate` is the single-pair shortcut.
+
+```rust
+for r in client.get_rates("USD", &["EUR", "GBP"])? {
+    println!("{}/{}: {} at {:?}", r.source, r.target, r.rate, r.time);
+}
+
+let rate = client.get_rate("USD", "EUR")?;
+println!("USD/EUR: {:?} at {:?}", rate.rate, rate.date);
+```
+
+### `convert(from, to, amount)` and `convert_on_date(from, to, amount, date)`
+
+Convert at the current rate, or at the rate on a past date (`YYYY-MM-DD`, last 365 days; the closest earlier point is used when the date has none).
 
 ```rust
 let result = client.convert("USD", "EUR", 250.0)?;
-println!("Rate: {:?}", result.rate);
-println!("Result: {:?}", result.result);
+println!("Rate: {:?}  Result: {:?}", result.rate, result.result);
+
+let past = client.convert_on_date("USD", "EUR", 250.0, "2026-09-15")?;
+println!("{:?}: {:?} -> {:?}", past.date, past.rate, past.result);
 ```
 
 ### `for_date(date, base, symbols)`
 
-Rates as of a specific historical date (`YYYY-MM-DD`).
+Rates on a past date (`YYYY-MM-DD`, last 365 days). `symbols` is required, and each symbol costs one request. Dates older than 30 days resolve against the weekly 1-year series, so you get the closest earlier weekly point.
 
 ```rust
-let rates = client.for_date("2025-01-15", "USD", Some(&["EUR", "GBP"]))?;
+let rates = client.for_date("2026-10-01", "USD", Some(&["EUR", "GBP"]))?;
 println!("Date: {:?}", rates.date);
 println!("Rates: {:?}", rates.rates);
 ```
 
 ### `time_series(start_date, end_date, base, symbols)`
 
-Rates across a date range, keyed by date.
+Rates across a date range, keyed by date then currency. The start date must be within the last 365 days; `symbols` is required, one request per symbol.
 
 ```rust
 let series = client.time_series(
-    "2025-01-01",
-    "2025-01-31",
+    "2026-10-01",
+    "2026-10-15",
     "USD",
     Some(&["EUR", "GBP"]),
 )?;
@@ -132,29 +152,9 @@ for (date, day_rates) in series.rates.unwrap_or_default() {
 }
 ```
 
-### `symbols()`
-
-Every supported currency code with its details.
-
-```rust
-let symbols = client.symbols()?;
-for (code, info) in symbols.symbols.unwrap_or_default() {
-    println!("{code}: {info}");
-}
-```
-
-### `get_rate(from, to)`
-
-A single currency pair.
-
-```rust
-let rate = client.get_rate("USD", "EUR")?;
-println!("USD/EUR: {:?}", rate.rate);
-```
-
 ### `get_historical_rates(source, target, period)`
 
-A pair's history over a preset period — `"1d"`, `"7d"`, `"30d"` or `"1y"`. Returns a `Vec<HistoricalRatePoint>` of `date` / `rate` pairs.
+A pair's history over a preset period: `"1d"`, `"7d"`, `"30d"` or `"1y"` (daily points; weekly for `"1y"`). Returns a `Vec<HistoricalRatePoint>` (`date`, `rate`, `timestamp` in Unix milliseconds), oldest first.
 
 ```rust
 let history = client.get_historical_rates("USD", "EUR", "30d")?;
@@ -163,9 +163,46 @@ for point in history.rates.unwrap_or_default() {
 }
 ```
 
+### `symbols()`
+
+Every supported currency, no key needed. `symbols` maps each code to a `{"code","name","symbol"}` JSON object; `currencies` is the typed list in the API's order.
+
+```rust
+let symbols = AllRatesToday::keyless().symbols()?;
+println!("{:?} currencies", symbols.count);
+for c in symbols.currencies.unwrap_or_default() {
+    println!("{:?} {:?} {:?}", c.code, c.name, c.symbol);
+}
+```
+
+### `official_rates(bank, source, target)` and `official_sources()`
+
+The latest official table published by a central bank or tax authority (121 central banks + 3 tax authorities: HMRC, US Treasury, Swiss BAZG). These are the fixed, citable rates for invoicing, tax, customs and accounting, not live market rates. No key needed. Cite `rate_date`, not today's date.
+
+```rust
+let keyless = AllRatesToday::keyless();
+
+// One pair (cross-computed inside the bank's table when not published directly)
+let ecb = keyless.official_rates("ecb", Some("EUR"), Some("USD"))?;
+println!("ECB {}: 1 EUR = {:?} USD ({:?})", ecb.rate_date, ecb.rate, ecb.rate_type);
+
+// Full published table
+let table = keyless.official_rates("ecb", None, None)?;
+for row in table.rates.unwrap_or_default() {
+    println!("{} {} {} {}", row.base, row.quote, row.rate_type, row.value);
+}
+
+// Every source with its latest publication date
+for s in keyless.official_sources()?.sources {
+    println!("{} {} {:?} stale={:?}", s.code, s.name, s.latest, s.stale);
+}
+```
+
+Dated and historical central-bank tables (`/api/v1/central-bank/{bank}/{date}`) need a paid plan; see [pricing](https://allratestoday.com/pricing).
+
 ### `with_base_url(api_key, base_url)`
 
-Override the default host (`https://allratestoday.com`) for testing or a self-hosted deployment.
+Override the default host (`https://allratestoday.com`), for example to point at a test server.
 
 ```rust
 let client = AllRatesToday::with_base_url(
@@ -180,13 +217,14 @@ let client = AllRatesToday::with_base_url(
 
 ## 🛡️ Error handling
 
-Every method returns `Result<T, AllRatesTodayError>`. The enum has three variants:
+Every method returns `Result<T, AllRatesTodayError>`. The enum has four variants:
 
 | Variant | Description |
 |---------|-------------|
 | `HttpError(reqwest::Error)` | Network or transport-level failure (timeout, DNS, TLS) |
 | `ApiError { status, message }` | Non-2xx HTTP response; `status` is the code, `message` the response body |
-| `ParseError(String)` | The response body could not be deserialised |
+| `ParseError(String)` | The response body could not be deserialised, or held no rate |
+| `InvalidArgument(String)` | Rejected before sending: missing key, missing symbols, bad or out-of-range date, bad source code |
 
 ```rust
 use allratestoday::{AllRatesToday, AllRatesTodayError};
@@ -200,6 +238,7 @@ match client.latest("USD", None) {
         eprintln!("API error {status}: {message}");
     }
     Err(AllRatesTodayError::ParseError(msg)) => eprintln!("Parse error: {msg}"),
+    Err(AllRatesTodayError::InvalidArgument(msg)) => eprintln!("Invalid argument: {msg}"),
 }
 ```
 
@@ -207,9 +246,10 @@ match client.latest("USD", None) {
 
 ## 💡 Notes
 
-- **Blocking only.** The client uses `reqwest::blocking`, so calls must not be made from inside an async runtime's worker thread — wrap them in `spawn_blocking` if you are on Tokio.
-- **Optional fields.** Response fields are `Option<_>` so a partial or evolving API payload never fails to deserialise. Unwrap or pattern-match rather than assuming a value is present.
-- **Tests.** Run the unit tests, which cover client construction and response deserialisation, with `cargo test`.
+- **Blocking only.** The client uses `reqwest::blocking` (10-second timeout), so calls must not be made from inside an async runtime's worker thread — wrap them in `spawn_blocking` if you are on Tokio.
+- **Optional fields.** Most response fields are `Option<_>` so an evolving API payload never fails to deserialise. Unwrap or pattern-match rather than assuming a value is present.
+- **Request cost.** `for_date` and `time_series` make one request per symbol, because the history endpoint takes one target per call.
+- **Tests.** `cargo test` runs the unit tests against a local mock server using response bodies captured from the live API; set `ALLRATES_API_KEY` to also run the live smoke test (4 keyed requests).
 
 ## 🤖 Use it from an AI agent
 

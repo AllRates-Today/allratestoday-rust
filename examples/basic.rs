@@ -47,8 +47,9 @@ fn main() {
     // -----------------------------------------------------------------------
     // 3. Historical rates for a specific date
     // -----------------------------------------------------------------------
-    println!("\n--- Historical Rates (2025-01-15, USD) ---");
-    match client.for_date("2025-01-15", "USD", Some(&["EUR", "GBP"])) {
+    // Dates must fall within the last 365 days; one request per symbol.
+    println!("\n--- Historical Rates (2026-10-01, USD) ---");
+    match client.for_date("2026-10-01", "USD", Some(&["EUR", "GBP"])) {
         Ok(resp) => {
             println!("  Date: {:?}", resp.date);
             if let Some(rates) = &resp.rates {
@@ -63,8 +64,8 @@ fn main() {
     // -----------------------------------------------------------------------
     // 4. Time series
     // -----------------------------------------------------------------------
-    println!("\n--- Time Series (2025-01-01 to 2025-01-07, USD -> EUR) ---");
-    match client.time_series("2025-01-01", "2025-01-07", "USD", Some(&["EUR"])) {
+    println!("\n--- Time Series (2026-10-01 to 2026-10-07, USD -> EUR) ---");
+    match client.time_series("2026-10-01", "2026-10-07", "USD", Some(&["EUR"])) {
         Ok(resp) => {
             if let Some(rates) = &resp.rates {
                 let mut dates: Vec<&String> = rates.keys().collect();
@@ -89,7 +90,7 @@ fn main() {
                         println!("  ... and {} more", symbols.len() - 5);
                         break;
                     }
-                    println!("  {code}: {info}");
+                    println!("  {code}: {}", info["name"]);
                 }
             }
         }
@@ -127,6 +128,18 @@ fn main() {
                 }
             }
         }
+        Err(e) => eprintln!("  Error: {e}"),
+    }
+
+    // -----------------------------------------------------------------------
+    // 8. Official central-bank rate (no API key needed)
+    // -----------------------------------------------------------------------
+    println!("\n--- Official ECB reference rate (EUR -> USD) ---");
+    match AllRatesToday::keyless().official_rates("ecb", Some("EUR"), Some("USD")) {
+        Ok(resp) => println!(
+            "  {}: {:?} ({:?})",
+            resp.rate_date, resp.rate, resp.rate_type
+        ),
         Err(e) => eprintln!("  Error: {e}"),
     }
 }
