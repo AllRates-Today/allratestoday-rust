@@ -47,6 +47,7 @@ fn main() {
     // -----------------------------------------------------------------------
     // 3. Historical rates for a specific date
     // -----------------------------------------------------------------------
+    // Paid plans only (free and trial keys get 403 historical_requires_paid_plan).
     // Dates must fall within the last 365 days; one request per symbol.
     println!("\n--- Historical Rates (2026-10-01, USD) ---");
     match client.for_date("2026-10-01", "USD", Some(&["EUR", "GBP"])) {
@@ -62,7 +63,7 @@ fn main() {
     }
 
     // -----------------------------------------------------------------------
-    // 4. Time series
+    // 4. Time series (paid plans only)
     // -----------------------------------------------------------------------
     println!("\n--- Time Series (2026-10-01 to 2026-10-07, USD -> EUR) ---");
     match client.time_series("2026-10-01", "2026-10-07", "USD", Some(&["EUR"])) {
@@ -112,7 +113,7 @@ fn main() {
     }
 
     // -----------------------------------------------------------------------
-    // 7. Historical rates with preset period
+    // 7. Historical rates with preset period (paid plans only)
     // -----------------------------------------------------------------------
     println!("\n--- Historical Rates (USD -> EUR, 7d) ---");
     match client.get_historical_rates("USD", "EUR", "7d") {

@@ -1,12 +1,17 @@
 //! # AllRatesToday Rust SDK
 //!
 //! Official Rust client for the [AllRatesToday](https://allratestoday.com) exchange rate API:
-//! real-time mid-market rates for 160+ currencies, conversion, up to a year of history, and
-//! the official rates published by 121 central banks and 3 tax authorities.
+//! real-time mid-market rates for 160+ currencies, conversion, up to a year of history (paid
+//! plans), and the official rates published by 121 central banks and 3 tax authorities.
 //!
 //! Get a free API key at <https://allratestoday.com/register> (300 free requests, lifetime).
 //! [`AllRatesToday::symbols`], [`AllRatesToday::official_rates`] and
 //! [`AllRatesToday::official_sources`] work without a key.
+//!
+//! History and past-date rates ([`AllRatesToday::convert_on_date`], [`AllRatesToday::for_date`],
+//! [`AllRatesToday::time_series`], [`AllRatesToday::get_historical_rates`]) need a paid plan;
+//! free and trial keys get [`AllRatesTodayError::ApiError`] with status 403 and code
+//! `historical_requires_paid_plan`. The keyed API sends no CORS headers, so use it server-side.
 //!
 //! ## Quick Start
 //!
@@ -632,7 +637,8 @@ impl AllRatesToday {
     }
 
     /// Convert an amount at the rate on a past date (`YYYY-MM-DD`, last 365 days). Uses the
-    /// closest earlier point when the date has none (the 1-year window is weekly).
+    /// closest earlier point when the date has none (the 1-year window is weekly). Paid plans
+    /// only: free and trial keys get a 403 `historical_requires_paid_plan` error.
     pub fn convert_on_date(
         &self,
         from: &str,
@@ -658,7 +664,8 @@ impl AllRatesToday {
     }
 
     /// Rates on a past date (`YYYY-MM-DD`, last 365 days). `symbols` is required; each symbol
-    /// costs one request because the history endpoint takes one target per call.
+    /// costs one request because the history endpoint takes one target per call. Paid plans
+    /// only: free and trial keys get a 403 `historical_requires_paid_plan` error.
     ///
     /// ```no_run
     /// # use allratestoday::AllRatesToday;
@@ -689,7 +696,8 @@ impl AllRatesToday {
     }
 
     /// Daily rates between two dates (`YYYY-MM-DD`, start within the last 365 days), keyed by
-    /// date then currency. `symbols` is required; one request per symbol.
+    /// date then currency. `symbols` is required; one request per symbol. Paid plans only:
+    /// free and trial keys get a 403 `historical_requires_paid_plan` error.
     ///
     /// ```no_run
     /// # use allratestoday::AllRatesToday;
@@ -734,7 +742,8 @@ impl AllRatesToday {
     }
 
     /// A pair's history over a preset period: `"1d"`, `"7d"`, `"30d"` or `"1y"` (daily points;
-    /// weekly for `"1y"`), oldest first.
+    /// weekly for `"1y"`), oldest first. Paid plans only: free and trial keys get a 403
+    /// `historical_requires_paid_plan` error.
     ///
     /// ```no_run
     /// # use allratestoday::AllRatesToday;
@@ -836,9 +845,9 @@ mod tests {
     const RATES: &str = r#"[{"rate":0.888455,"source":"USD","target":"EUR","time":"2026-10-16T12:04:01+0000"},{"rate":0.749738,"source":"USD","target":"GBP","time":"2026-10-16T12:04:01+0000"}]"#;
     const RATE: &str =
         r#"[{"rate":0.888455,"source":"USD","target":"EUR","time":"2026-10-16T12:04:01+0000"}]"#;
-    const CONVERT: &str = r#"{"from":{"currency":"USD","amount":100},"to":{"currency":"EUR","amount":88.8455},"rate":0.888455,"source":"interbank"}"#;
-    const HIST_EUR: &str = r#"{"source":"USD","target":"EUR","data":[{"date":"2026-10-14","rate":0.861,"timestamp":1791936000000},{"date":"2026-10-12","rate":0.859,"timestamp":1791763200000},{"date":"2026-10-15","rate":0.862,"timestamp":1792022400000},{"date":"2026-10-16","rate":0.888455,"timestamp":1792108800000}],"source_api":"interbank","period":"7d"}"#;
-    const HIST_GBP: &str = r#"{"source":"USD","target":"GBP","data":[{"date":"2026-10-12","rate":0.741,"timestamp":1791763200000},{"date":"2026-10-15","rate":0.745,"timestamp":1792022400000}],"source_api":"interbank","period":"7d"}"#;
+    const CONVERT: &str = r#"{"from":{"currency":"USD","amount":100},"to":{"currency":"EUR","amount":88.8455},"rate":0.888455,"source":"mid-market"}"#;
+    const HIST_EUR: &str = r#"{"source":"USD","target":"EUR","data":[{"date":"2026-10-14","rate":0.861,"timestamp":1791936000000},{"date":"2026-10-12","rate":0.859,"timestamp":1791763200000},{"date":"2026-10-15","rate":0.862,"timestamp":1792022400000},{"date":"2026-10-16","rate":0.888455,"timestamp":1792108800000}],"source_api":"mid-market","period":"7d"}"#;
+    const HIST_GBP: &str = r#"{"source":"USD","target":"GBP","data":[{"date":"2026-10-12","rate":0.741,"timestamp":1791763200000},{"date":"2026-10-15","rate":0.745,"timestamp":1792022400000}],"source_api":"mid-market","period":"7d"}"#;
     const SYMBOLS: &str = r#"{"currencies":[{"code":"USD","name":"US Dollar","symbol":"$"},{"code":"EUR","name":"Euro","symbol":"€"}],"count":2}"#;
     const OFFICIAL: &str = r#"{"bank":"ecb","rate_date":"2026-10-15","source":"EUR","target":"USD","rate":1.1208,"rate_type":"reference","derived":false,"method":"published","age_days":1,"stale":false,"cadence":"daily","attribution":{"source":"Official rates published by ECB, served by AllRatesToday","url":"https://allratestoday.com/central-bank-rates-api/ecb/","terms":"Free to use with visible attribution linking to allratestoday.com"},"free_key":"..."}"#;
     const OFFICIAL_TABLE: &str = r#"{"bank":"ecb","rate_date":"2026-10-15","age_days":1,"stale":false,"cadence":"daily","rates":[{"base":"EUR","quote":"AUD","type":"reference","value":1.6218},{"base":"EUR","quote":"BRL","type":"reference","value":5.6679}]}"#;
@@ -1135,10 +1144,31 @@ mod tests {
         assert!(conv.result.unwrap() > 0.0);
         let today = c.today();
         let past = days_to_string(today - 3);
-        let hist = c.for_date(&past, "USD", Some(&["EUR"])).unwrap();
-        assert!(hist.rates.as_ref().unwrap()["EUR"] > 0.0);
-        let series = c.get_historical_rates("USD", "EUR", "7d").unwrap();
-        assert!(!series.rates.as_ref().unwrap().is_empty());
+        // History is paid-plan only; on a free or trial key a 403
+        // historical_requires_paid_plan counts as a pass.
+        let paid_only = |e: &AllRatesTodayError| matches!(e, AllRatesTodayError::ApiError { status: 403, message } if message.contains("historical_requires_paid_plan"));
+        let hist_eur = match c.for_date(&past, "USD", Some(&["EUR"])) {
+            Ok(h) => {
+                let v = h.rates.unwrap()["EUR"];
+                assert!(v > 0.0);
+                Some(v)
+            }
+            Err(e) => {
+                assert!(paid_only(&e), "{e}");
+                None
+            }
+        };
+        let points = match c.get_historical_rates("USD", "EUR", "7d") {
+            Ok(s) => {
+                let n = s.rates.unwrap().len();
+                assert!(n > 0);
+                n
+            }
+            Err(e) => {
+                assert!(paid_only(&e), "{e}");
+                0
+            }
+        };
         let sym = AllRatesToday::keyless().symbols().unwrap();
         assert!(sym.count.unwrap() >= 150);
         let ecb = AllRatesToday::keyless()
@@ -1147,8 +1177,8 @@ mod tests {
         assert!(ecb.rate.unwrap() > 0.0);
         eprintln!(
             "LIVE: USD/EUR {:?} ({:?}); 100 USD = {:?} EUR; {past} EUR {:?}; {} points; {:?} symbols; ECB {} {:?}",
-            latest.rates.unwrap()["EUR"], latest.date, conv.result, hist.rates.unwrap()["EUR"],
-            series.rates.unwrap().len(), sym.count, ecb.rate_date, ecb.rate
+            latest.rates.unwrap()["EUR"], latest.date, conv.result, hist_eur,
+            points, sym.count, ecb.rate_date, ecb.rate
         );
     }
 

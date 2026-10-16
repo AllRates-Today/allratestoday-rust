@@ -14,8 +14,8 @@ The official Rust client for the [AllRatesToday](https://allratestoday.com) curr
 
 - ⚡ **Real-time rates** — latest mid-market rates for any base currency
 - 🌍 **160+ currencies** — the full list is available keylessly via `symbols()`
-- 📅 **Historical data** — a past date, a date range, or a preset period (`1d`, `7d`, `30d`, `1y`) across the last 365 days
-- 💱 **Conversion** — convert an amount at the current rate or at a past date's rate
+- 📅 **Historical data** — a past date, a date range, or a preset period (`1d`, `7d`, `30d`, `1y`) across the last 365 days (paid plans)
+- 💱 **Conversion** — convert an amount at the current rate, or at a past date's rate on a paid plan
 - 🏛️ **Official rates** — the published tables of 121 central banks + 3 tax authorities, no key needed
 - 🧩 **Typed responses** — every method returns a documented `struct` via `serde`
 - 🛡️ **Typed errors** — one `AllRatesTodayError` enum separating transport, API, parse and argument failures
@@ -25,6 +25,8 @@ The official Rust client for the [AllRatesToday](https://allratestoday.com) curr
 ## 🔑 Get your API key
 
 Create a free key at [allratestoday.com/register](https://allratestoday.com/register): 300 free requests, lifetime (the allowance never resets). Keys look like `art_live_...`, and the SDK sends yours as a Bearer token in the `Authorization` header. `symbols()`, `official_rates()` and `official_sources()` work without a key (use `AllRatesToday::keyless()`); every other method returns `AllRatesTodayError::InvalidArgument` if the client has none.
+
+A free key (and a 100-call agent trial key) covers the latest rates and conversion. History and past-date rates (`convert_on_date`, `for_date`, `time_series`, `get_historical_rates`) need a [paid plan](https://allratestoday.com/pricing); on a free or trial key they return `AllRatesTodayError::ApiError` with status 403 and code `historical_requires_paid_plan`. The keyed API sends no CORS headers, so use it from server-side code, not the browser.
 
 ## 📦 Installation
 
@@ -79,10 +81,10 @@ Construct a client with `AllRatesToday::new(api_key)`, `AllRatesToday::keyless()
 | `get_rates(source, targets)` | `GET /api/v1/rates` | yes | `Vec<Rate>` |
 | `get_rate(from, to)` | `GET /api/v1/rates` | yes | `RateResponse` |
 | `convert(from, to, amount)` | `GET /api/v1/rates?amount=` | yes | `ConvertResponse` |
-| `convert_on_date(from, to, amount, date)` | `GET /api/historical-rates` | yes | `ConvertResponse` |
-| `for_date(date, base, symbols)` | `GET /api/historical-rates` (one call per symbol) | yes | `HistoricalRatesResponse` |
-| `time_series(start_date, end_date, base, symbols)` | `GET /api/historical-rates` (one call per symbol) | yes | `TimeSeriesResponse` |
-| `get_historical_rates(source, target, period)` | `GET /api/historical-rates` | yes | `HistoricalRateSeriesResponse` |
+| `convert_on_date(from, to, amount, date)` | `GET /api/historical-rates` | paid plan | `ConvertResponse` |
+| `for_date(date, base, symbols)` | `GET /api/historical-rates` (one call per symbol) | paid plan | `HistoricalRatesResponse` |
+| `time_series(start_date, end_date, base, symbols)` | `GET /api/historical-rates` (one call per symbol) | paid plan | `TimeSeriesResponse` |
+| `get_historical_rates(source, target, period)` | `GET /api/historical-rates` | paid plan | `HistoricalRateSeriesResponse` |
 | `symbols()` | `GET /api/v1/symbols` | no | `SymbolsResponse` |
 | `official_rates(bank, source, target)` | `GET /api/open/central-bank/{bank}` | no | `OfficialRatesResponse` |
 | `official_sources()` | `GET /api/open/central-banks` | no | `OfficialSourcesResponse` |
@@ -116,7 +118,7 @@ println!("USD/EUR: {:?} at {:?}", rate.rate, rate.date);
 
 ### `convert(from, to, amount)` and `convert_on_date(from, to, amount, date)`
 
-Convert at the current rate, or at the rate on a past date (`YYYY-MM-DD`, last 365 days; the closest earlier point is used when the date has none).
+Convert at the current rate, or at the rate on a past date (`YYYY-MM-DD`, last 365 days; the closest earlier point is used when the date has none). `convert_on_date` needs a paid plan.
 
 ```rust
 let result = client.convert("USD", "EUR", 250.0)?;
@@ -128,7 +130,7 @@ println!("{:?}: {:?} -> {:?}", past.date, past.rate, past.result);
 
 ### `for_date(date, base, symbols)`
 
-Rates on a past date (`YYYY-MM-DD`, last 365 days). `symbols` is required, and each symbol costs one request. Dates older than 30 days resolve against the weekly 1-year series, so you get the closest earlier weekly point.
+Paid plan. Rates on a past date (`YYYY-MM-DD`, last 365 days). `symbols` is required, and each symbol costs one request. Dates older than 30 days resolve against the weekly 1-year series, so you get the closest earlier weekly point.
 
 ```rust
 let rates = client.for_date("2026-10-01", "USD", Some(&["EUR", "GBP"]))?;
@@ -138,7 +140,7 @@ println!("Rates: {:?}", rates.rates);
 
 ### `time_series(start_date, end_date, base, symbols)`
 
-Rates across a date range, keyed by date then currency. The start date must be within the last 365 days; `symbols` is required, one request per symbol.
+Paid plan. Rates across a date range, keyed by date then currency. The start date must be within the last 365 days; `symbols` is required, one request per symbol.
 
 ```rust
 let series = client.time_series(
@@ -154,7 +156,7 @@ for (date, day_rates) in series.rates.unwrap_or_default() {
 
 ### `get_historical_rates(source, target, period)`
 
-A pair's history over a preset period: `"1d"`, `"7d"`, `"30d"` or `"1y"` (daily points; weekly for `"1y"`). Returns a `Vec<HistoricalRatePoint>` (`date`, `rate`, `timestamp` in Unix milliseconds), oldest first.
+Paid plan. A pair's history over a preset period: `"1d"`, `"7d"`, `"30d"` or `"1y"` (daily points; weekly for `"1y"`). Returns a `Vec<HistoricalRatePoint>` (`date`, `rate`, `timestamp` in Unix milliseconds), oldest first.
 
 ```rust
 let history = client.get_historical_rates("USD", "EUR", "30d")?;
@@ -249,7 +251,7 @@ match client.latest("USD", None) {
 - **Blocking only.** The client uses `reqwest::blocking` (10-second timeout), so calls must not be made from inside an async runtime's worker thread — wrap them in `spawn_blocking` if you are on Tokio.
 - **Optional fields.** Most response fields are `Option<_>` so an evolving API payload never fails to deserialise. Unwrap or pattern-match rather than assuming a value is present.
 - **Request cost.** `for_date` and `time_series` make one request per symbol, because the history endpoint takes one target per call.
-- **Tests.** `cargo test` runs the unit tests against a local mock server using response bodies captured from the live API; set `ALLRATES_API_KEY` to also run the live smoke test (4 keyed requests).
+- **Tests.** `cargo test` runs the unit tests against a local mock server using response bodies captured from the live API; set `ALLRATES_API_KEY` to also run the live smoke test (4 keyed requests; on a free key the two history calls are expected to return 403 `historical_requires_paid_plan`).
 
 ## 🤖 Use it from an AI agent
 
@@ -258,7 +260,7 @@ The same rates are available to coding agents and LLM tools without a second int
 - **Claude Code plugin** (no key): `/plugin marketplace add AllRates-Today/claude-code-plugin` then `/plugin install allratestoday@allratestoday`
 - **Hosted MCP endpoint**: `https://allratestoday.com/api/mcp` — Streamable HTTP, keyless, nothing to install
 - **Local MCP servers**: `npx -y @allratestoday/mcp-server` (live mid-market rates) · `npx -y @allratestoday/central-bank-mcp` (official central-bank rates)
-- **Trial key for agents, no signup**: `POST https://allratestoday.com/api/agent/keys` (send `Content-Type: application/json`) returns a 100-call key valid 7 days, enough to try history and dated tables; both MCP servers expose it as `request_trial_key`
+- **Trial key for agents, no signup**: `POST https://allratestoday.com/api/agent/keys` (send `Content-Type: application/json`) returns a 100-call key valid 7 days for latest rates and latest central-bank tables (history and dated tables are paid-plan only); both MCP servers expose it as `request_trial_key`
 - **Daily Reference Rate** (first published 2026-10-12): one fixed USD table per business day, the 16:00 London median of minute samples, never revised — keyless at `https://allratestoday.com/api/open/reference-rate`, `get_reference_rate` in the MCP server
 - Machine-readable site guide: [llms.txt](https://allratestoday.com/llms.txt)
 
