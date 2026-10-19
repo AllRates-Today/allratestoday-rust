@@ -274,6 +274,7 @@ The same rates are available to coding agents and LLM tools without a second int
 - **Repository:** [github.com/AllRates-Today/allratestoday-rust](https://github.com/AllRates-Today/allratestoday-rust)
 - **Status:** [allratestoday.com/status](https://allratestoday.com/status)
 - **Support:** [allratestoday.com/contact](https://allratestoday.com/contact)
+- **Dashboard:** [allratestoday.com/profile](https://allratestoday.com/profile)
 
 ## 📜 License
 
