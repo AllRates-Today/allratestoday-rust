@@ -248,6 +248,7 @@ match client.latest("USD", None) {
 
 ## 💡 Notes
 
+- **Attribution for keyless use.** `official_rates()`, `official_sources()` and the open endpoints are free with a visible link where the rates are shown: `<a href="https://allratestoday.com">Exchange rates by AllRatesToday</a>`. With an API key it is appreciated, not required. Terms: <https://allratestoday.com/terms/#attribution>.
 - **Blocking only.** The client uses `reqwest::blocking` (10-second timeout), so calls must not be made from inside an async runtime's worker thread — wrap them in `spawn_blocking` if you are on Tokio.
 - **Optional fields.** Most response fields are `Option<_>` so an evolving API payload never fails to deserialise. Unwrap or pattern-match rather than assuming a value is present.
 - **Request cost.** `for_date` and `time_series` make one request per symbol, because the history endpoint takes one target per call.
