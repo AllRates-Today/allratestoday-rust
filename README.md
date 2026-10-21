@@ -16,7 +16,7 @@ The official Rust client for the [AllRatesToday](https://allratestoday.com) curr
 - 🌍 **160+ currencies** — the full list is available keylessly via `symbols()`
 - 📅 **Historical data** — a past date, a date range, or a preset period (`1d`, `7d`, `30d`, `1y`) across the last 365 days (paid plans)
 - 💱 **Conversion** — convert an amount at the current rate, or at a past date's rate on a paid plan
-- 🏛️ **Official rates** — the published tables of 121 central banks + 3 tax authorities, no key needed
+- 🏛️ **Official rates** — the published tables of [122 central banks and 4 tax authorities](https://allratestoday.com/central-bank-rates-api/institutions/), no key needed
 - 🧩 **Typed responses** — every method returns a documented `struct` via `serde`
 - 🛡️ **Typed errors** — one `AllRatesTodayError` enum separating transport, API, parse and argument failures
 - 🔧 **Overridable base URL** — point the client at a test server with `with_base_url`
@@ -179,7 +179,7 @@ for c in symbols.currencies.unwrap_or_default() {
 
 ### `official_rates(bank, source, target)` and `official_sources()`
 
-The latest official table published by a central bank or tax authority (121 central banks + 3 tax authorities: HMRC, US Treasury, Swiss BAZG). These are the fixed, citable rates for invoicing, tax, customs and accounting, not live market rates. No key needed. Cite `rate_date`, not today's date.
+The latest official table published by a central bank or tax authority ([122 central banks and 4 tax authorities](https://allratestoday.com/central-bank-rates-api/institutions/): HMRC, US Treasury, Swiss BAZG, India's CBIC). These are the fixed, citable rates for invoicing, tax, customs and accounting, not live market rates. No key needed. Cite `rate_date`, not today's date.
 
 ```rust
 let keyless = AllRatesToday::keyless();
