@@ -4,7 +4,7 @@
 //! real-time mid-market rates for 160+ currencies, conversion, up to a year of history (paid
 //! plans), and the official rates published by 121 central banks and 3 tax authorities.
 //!
-//! Get a free API key at <https://allratestoday.com/register> (300 free requests, lifetime).
+//! Get a free API key at <https://allratestoday.com/register>.
 //! [`AllRatesToday::symbols`], [`AllRatesToday::official_rates`] and
 //! [`AllRatesToday::official_sources`] work without a key.
 //!

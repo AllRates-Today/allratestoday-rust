@@ -24,7 +24,7 @@ The official Rust client for the [AllRatesToday](https://allratestoday.com) curr
 
 ## 🔑 Get your API key
 
-Create a free key at [allratestoday.com/register](https://allratestoday.com/register): 300 free requests, lifetime (the allowance never resets). Keys look like `art_live_...`, and the SDK sends yours as a Bearer token in the `Authorization` header. `symbols()`, `official_rates()` and `official_sources()` work without a key (use `AllRatesToday::keyless()`); every other method returns `AllRatesTodayError::InvalidArgument` if the client has none.
+Create a free key at [allratestoday.com/register](https://allratestoday.com/register), no card. Keys look like `art_live_...`, and the SDK sends yours as a Bearer token in the `Authorization` header. `symbols()`, `official_rates()` and `official_sources()` work without a key (use `AllRatesToday::keyless()`); every other method returns `AllRatesTodayError::InvalidArgument` if the client has none.
 
 A free key (and a 100-call agent trial key) covers the latest rates and conversion. History and past-date rates (`convert_on_date`, `for_date`, `time_series`, `get_historical_rates`) need a [paid plan](https://allratestoday.com/pricing); on a free or trial key they return `AllRatesTodayError::ApiError` with status 403 and code `historical_requires_paid_plan`. The keyed API sends no CORS headers, so use it from server-side code, not the browser.
 
